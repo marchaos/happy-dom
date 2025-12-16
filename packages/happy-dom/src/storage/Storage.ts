@@ -1,4 +1,3 @@
-import ClassMethodBinder from '../utilities/ClassMethodBinder.js';
 import * as PropertySymbol from '../PropertySymbol.js';
 
 /**
@@ -15,21 +14,32 @@ export default class Storage {
 	constructor() {
 		const data = this[PropertySymbol.data];
 
-		const methodBinder = new ClassMethodBinder(this, [Storage]);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
-		return new Proxy(this, {
+		const proxy = new Proxy(this, {
 			get: (target, property) => {
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				if (property in data) {
 					return data[property];
 				}
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
-
 				if (property in target || typeof property === 'symbol') {
 					return true;
 				}
@@ -55,7 +65,7 @@ export default class Storage {
 				return false;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);
@@ -86,6 +96,8 @@ export default class Storage {
 				}
 			}
 		});
+
+		return proxy;
 	}
 
 	/**

@@ -1,6 +1,5 @@
 /* eslint-disable filenames/match-exported */
 
-import ClassMethodBinder from '../../utilities/ClassMethodBinder.js';
 import * as PropertySymbol from '../../PropertySymbol.js';
 import NamedNodeMap from './NamedNodeMap.js';
 
@@ -16,16 +15,29 @@ export default class NamedNodeMapProxyFactory {
 	 * @param namedNodeMap
 	 */
 	public static createProxy(namedNodeMap: NamedNodeMap): NamedNodeMap {
-		const methodBinder = new ClassMethodBinder(this, [NamedNodeMap]);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
-		return new Proxy<NamedNodeMap>(namedNodeMap, {
+		const proxy = new Proxy<NamedNodeMap>(namedNodeMap, {
 			get: (target, property) => {
 				if (property === 'length') {
 					return namedNodeMap[PropertySymbol.items].size;
 				}
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				const index = Number(property);
 				if (!isNaN(index)) {
@@ -34,7 +46,6 @@ export default class NamedNodeMapProxyFactory {
 				return target.getNamedItem(<string>property) || undefined;
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
 				if (typeof property === 'symbol') {
 					(<any>target)[property] = newValue;
 					return true;
@@ -81,7 +92,7 @@ export default class NamedNodeMapProxyFactory {
 				return false;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);
@@ -123,5 +134,7 @@ export default class NamedNodeMapProxyFactory {
 				}
 			}
 		});
+
+		return proxy;
 	}
 }

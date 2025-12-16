@@ -1,4 +1,3 @@
-import ClassMethodBinder from '../../utilities/ClassMethodBinder.js';
 import * as PropertySymbol from '../../PropertySymbol.js';
 import Node from './Node.js';
 
@@ -25,19 +24,29 @@ class NodeList<T extends Node> {
 
 		this[PropertySymbol.items] = items;
 
-		const methodBinder = new ClassMethodBinder(
-			this,
-			this.constructor !== NodeList ? [this.constructor, NodeList] : [NodeList]
-		);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
 		const proxy = new Proxy(this, {
 			get: (target, property) => {
 				if (property === 'length') {
 					return items.length;
 				}
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				if (property === '') {
 					return undefined;
@@ -48,8 +57,6 @@ class NodeList<T extends Node> {
 				}
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
-
 				if (typeof property === 'symbol') {
 					(<any>target)[property] = newValue;
 					return true;
@@ -88,7 +95,7 @@ class NodeList<T extends Node> {
 				return !isNaN(index) && index >= 0 && index < items.length;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);

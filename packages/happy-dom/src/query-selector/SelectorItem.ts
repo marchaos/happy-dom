@@ -7,8 +7,6 @@ import ISelectorMatch from './ISelectorMatch.js';
 import ISelectorPseudo from './ISelectorPseudo.js';
 import DocumentFragment from '../nodes/document-fragment/DocumentFragment.js';
 
-const SPACE_REGEXP = /\s+/;
-
 /**
  * Selector item.
  */
@@ -202,6 +200,9 @@ export default class SelectorItem {
 		parentChildren: Element[],
 		pseudo: ISelectorPseudo
 	): ISelectorMatch | null {
+		// Cache tagName for type-matching pseudos to avoid repeated lookups
+		const elementTagName = element[PropertySymbol.tagName];
+
 		switch (pseudo.name) {
 			case 'first-child':
 				return parentChildren[0] === element ? { priorityWeight: 10 } : null;
@@ -215,7 +216,7 @@ export default class SelectorItem {
 					: null;
 			case 'first-of-type':
 				for (const child of parentChildren) {
-					if (child[PropertySymbol.tagName] === element[PropertySymbol.tagName]) {
+					if (child[PropertySymbol.tagName] === elementTagName) {
 						return child === element ? { priorityWeight: 10 } : null;
 					}
 				}
@@ -223,7 +224,7 @@ export default class SelectorItem {
 			case 'last-of-type':
 				for (let i = parentChildren.length - 1; i >= 0; i--) {
 					const child = parentChildren[i];
-					if (child[PropertySymbol.tagName] === element[PropertySymbol.tagName]) {
+					if (child[PropertySymbol.tagName] === elementTagName) {
 						return child === element ? { priorityWeight: 10 } : null;
 					}
 				}
@@ -231,7 +232,7 @@ export default class SelectorItem {
 			case 'only-of-type':
 				let isFound = false;
 				for (const child of parentChildren) {
-					if (child[PropertySymbol.tagName] === element[PropertySymbol.tagName]) {
+					if (child[PropertySymbol.tagName] === elementTagName) {
 						if (isFound || child !== element) {
 							return null;
 						}
@@ -240,7 +241,7 @@ export default class SelectorItem {
 				}
 				return isFound ? { priorityWeight: 10 } : null;
 			case 'checked':
-				return element[PropertySymbol.tagName] === 'INPUT' && (<HTMLInputElement>element).checked
+				return elementTagName === 'INPUT' && (<HTMLInputElement>element).checked
 					? { priorityWeight: 10 }
 					: null;
 			case 'disabled':
@@ -279,7 +280,7 @@ export default class SelectorItem {
 			case 'nth-of-type':
 				let nthOfTypeIndex = -1;
 				for (let i = 0, max = parentChildren.length; i < max; i++) {
-					if (parentChildren[i][PropertySymbol.tagName] === element[PropertySymbol.tagName]) {
+					if (parentChildren[i][PropertySymbol.tagName] === elementTagName) {
 						nthOfTypeIndex++;
 					}
 					if (parentChildren[i] === element) {
@@ -308,7 +309,7 @@ export default class SelectorItem {
 			case 'nth-last-of-type':
 				let nthLastOfTypeIndex = -1;
 				for (let i = parentChildren.length - 1; i >= 0; i--) {
-					if (parentChildren[i][PropertySymbol.tagName] === element[PropertySymbol.tagName]) {
+					if (parentChildren[i][PropertySymbol.tagName] === elementTagName) {
 						nthLastOfTypeIndex++;
 					}
 					if (parentChildren[i] === element) {
@@ -440,11 +441,11 @@ export default class SelectorItem {
 			return null;
 		}
 
-		const classList = element.className.split(SPACE_REGEXP);
+		const elementClassList = element.classList;
 		let priorityWeight = 0;
 
 		for (const className of this.classNames) {
-			if (!classList.includes(className)) {
+			if (!elementClassList.contains(className)) {
 				return null;
 			}
 			priorityWeight += 10;
