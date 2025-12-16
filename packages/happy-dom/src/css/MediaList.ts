@@ -1,6 +1,5 @@
 import CSSMediaRule from './rules/CSSMediaRule.js';
 import * as PropertySymbol from '../PropertySymbol.js';
-import ClassMethodBinder from '../utilities/ClassMethodBinder.js';
 
 const MEDIUM_REGEXP = /\s*,\s*/;
 
@@ -23,13 +22,26 @@ export default class MediaList {
 
 		this[PropertySymbol.cssRule] = cssRule;
 
-		const methodBinder = new ClassMethodBinder(this, [MediaList]);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
-		return new Proxy(this, {
+		const proxy = new Proxy(this, {
 			get: (target, property) => {
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				const index = Number(property);
 				if (!isNaN(index)) {
@@ -37,7 +49,6 @@ export default class MediaList {
 				}
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
 				if (property in target || typeof property === 'symbol') {
 					(<any>target)[property] = newValue;
 					return true;
@@ -67,7 +78,7 @@ export default class MediaList {
 				return !isNaN(index) && index >= 0 && index < target[PropertySymbol.getItemList]().length;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);
@@ -94,6 +105,8 @@ export default class MediaList {
 				}
 			}
 		});
+
+		return proxy;
 	}
 
 	/**

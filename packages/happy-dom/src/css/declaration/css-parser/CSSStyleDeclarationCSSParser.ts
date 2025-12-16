@@ -22,10 +22,10 @@ export default class CSSStyleDeclarationCSSParser {
 	} {
 		const properties: { [name: string]: string } = {};
 		const rules: Array<{ name: string; value: string; important: boolean }> = [];
-		const regexp = new RegExp(SPLIT_RULES_REGEXP);
+		SPLIT_RULES_REGEXP.lastIndex = 0;
 		let match;
 
-		while ((match = regexp.exec(cssText))) {
+		while ((match = SPLIT_RULES_REGEXP.exec(cssText))) {
 			const name = (match[1] ?? '').trim();
 			const value = (match[2] ?? '').trim();
 			const important = match[3] ? true : false;

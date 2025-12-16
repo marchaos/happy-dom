@@ -1,4 +1,3 @@
-import ClassMethodBinder from '../../utilities/ClassMethodBinder.js';
 import * as PropertySymbol from '../../PropertySymbol.js';
 import Element from './Element.js';
 
@@ -27,19 +26,29 @@ export default class HTMLCollection<T extends Element, NamedItem = T> {
 
 		this[PropertySymbol.query] = query;
 
-		const methodBinder = new ClassMethodBinder(
-			this,
-			this.constructor !== HTMLCollection ? [this.constructor, HTMLCollection] : [HTMLCollection]
-		);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
-		return new Proxy(this, {
+		const proxy: this = new Proxy(this, {
 			get: (target, property) => {
 				if (property === 'length') {
 					return query().length;
 				}
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				const index = Number(property);
 				if (!isNaN(index)) {
@@ -48,7 +57,6 @@ export default class HTMLCollection<T extends Element, NamedItem = T> {
 				return target.namedItem(<string>property) || undefined;
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
 				if (typeof property === 'symbol') {
 					(<any>target)[property] = newValue;
 					return true;
@@ -110,7 +118,7 @@ export default class HTMLCollection<T extends Element, NamedItem = T> {
 				return false;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);
@@ -151,6 +159,8 @@ export default class HTMLCollection<T extends Element, NamedItem = T> {
 				}
 			}
 		});
+
+		return proxy;
 	}
 
 	/**

@@ -1,4 +1,3 @@
-import ClassMethodBinder from '../utilities/ClassMethodBinder.js';
 import Element from '../nodes/element/Element.js';
 import * as PropertySymbol from '../PropertySymbol.js';
 
@@ -44,16 +43,30 @@ export default class DOMTokenList {
 		this[PropertySymbol.attributeName] = attributeName;
 		this[PropertySymbol.supports] = supports || [];
 
-		const methodBinder = new ClassMethodBinder(this, [DOMTokenList]);
+		// Cache for bound methods to avoid rebinding on every access
+		const boundMethodCache = new Map<string | symbol, Function>();
 
 		const proxy = new Proxy(this, {
 			get: (target, property) => {
 				if (property === 'length') {
 					return target[PropertySymbol.getTokenList]().length;
 				}
-				if (property in target || typeof property === 'symbol') {
-					methodBinder.bind(property);
+				if (typeof property === 'symbol') {
 					return (<any>target)[property];
+				}
+				if (property in target) {
+					const value = (<any>target)[property];
+					if (typeof value === 'function') {
+						// Check bound method cache first
+						const cachedMethod = boundMethodCache.get(property);
+						if (cachedMethod !== undefined) {
+							return cachedMethod;
+						}
+						const boundMethod = value.bind(proxy);
+						boundMethodCache.set(property, boundMethod);
+						return boundMethod;
+					}
+					return value;
 				}
 				const index = Number(property);
 				if (!isNaN(index)) {
@@ -61,7 +74,6 @@ export default class DOMTokenList {
 				}
 			},
 			set(target, property, newValue): boolean {
-				methodBinder.bind(property);
 				if (typeof property === 'symbol') {
 					(<any>target)[property] = newValue;
 					return true;
@@ -99,7 +111,8 @@ export default class DOMTokenList {
 				return !isNaN(index) && index >= 0 && index < target[PropertySymbol.getTokenList]().length;
 			},
 			defineProperty(target, property, descriptor): boolean {
-				methodBinder.preventBinding(property);
+				// Remove from bound cache if redefining
+				boundMethodCache.delete(property);
 
 				if (property in target) {
 					Object.defineProperty(target, property, descriptor);
@@ -185,15 +198,19 @@ export default class DOMTokenList {
 	 * @param newToken NewToken.
 	 */
 	public replace(token: string, newToken: string): boolean {
-		const list = this[PropertySymbol.getTokenList]().slice();
+		const list = this[PropertySymbol.getTokenList]();
 		const index = list.indexOf(token);
 		if (index === -1) {
 			return false;
 		}
-		list[index] = newToken;
+		// Build new value without creating intermediate array
+		const parts: string[] = [];
+		for (let i = 0, len = list.length; i < len; i++) {
+			parts.push(i === index ? newToken : list[i]);
+		}
 		this[PropertySymbol.ownerElement].setAttribute(
 			this[PropertySymbol.attributeName],
-			list.join(' ')
+			parts.join(' ')
 		);
 		return true;
 	}
@@ -253,19 +270,20 @@ export default class DOMTokenList {
 	 * @param tokens Tokens.
 	 */
 	public add(...tokens: string[]): void {
-		const list = this[PropertySymbol.getTokenList]().slice();
+		const list = this[PropertySymbol.getTokenList]();
+		const toAdd: string[] = [];
 
 		for (const token of tokens) {
-			const index = list.indexOf(token);
-			if (index === -1) {
-				list.push(token);
+			if (!list.includes(token) && !toAdd.includes(token)) {
+				toAdd.push(token);
 			}
 		}
 
-		this[PropertySymbol.ownerElement].setAttribute(
-			this[PropertySymbol.attributeName],
-			list.join(' ')
-		);
+		if (toAdd.length > 0) {
+			const currentValue = this[PropertySymbol.ownerElement].getAttribute(this[PropertySymbol.attributeName]) || '';
+			const newValue = currentValue ? currentValue + ' ' + toAdd.join(' ') : toAdd.join(' ');
+			this[PropertySymbol.ownerElement].setAttribute(this[PropertySymbol.attributeName], newValue);
+		}
 	}
 
 	/**
@@ -274,18 +292,18 @@ export default class DOMTokenList {
 	 * @param tokens Tokens.
 	 */
 	public remove(...tokens: string[]): void {
-		const list = this[PropertySymbol.getTokenList]().slice();
+		const list = this[PropertySymbol.getTokenList]();
+		const result: string[] = [];
 
-		for (const token of tokens) {
-			const index = list.indexOf(token);
-			if (index !== -1) {
-				list.splice(index, 1);
+		for (let i = 0, len = list.length; i < len; i++) {
+			if (!tokens.includes(list[i])) {
+				result.push(list[i]);
 			}
 		}
 
 		this[PropertySymbol.ownerElement].setAttribute(
 			this[PropertySymbol.attributeName],
-			list.join(' ')
+			result.join(' ')
 		);
 	}
 
