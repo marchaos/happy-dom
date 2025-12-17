@@ -59,12 +59,25 @@ export default class AsyncTaskManager {
 			});
 		}
 		// Fast path: if there are no running tasks, timers, or immediates, resolve immediately
+		// Also clear any pending waitUntilCompleteTimer since we're aborting
 		if (
 			this.runningTaskCount === 0 &&
 			this.runningTimers.length === 0 &&
-			this.runningImmediates.length === 0 &&
-			!this.waitUntilCompleteTimer
+			this.runningImmediates.length === 0
 		) {
+			// Clear the waitUntilComplete timer if set - we don't need to wait
+			if (this.waitUntilCompleteTimer) {
+				TIMER.clearTimeout(this.waitUntilCompleteTimer);
+				this.waitUntilCompleteTimer = null;
+			}
+			// Resolve any pending waitUntilComplete promises immediately
+			if (this.waitUntilCompleteResolvers.length > 0) {
+				const resolvers = this.waitUntilCompleteResolvers;
+				this.waitUntilCompleteResolvers = [];
+				for (const resolver of resolvers) {
+					resolver.resolve();
+				}
+			}
 			return Promise.resolve();
 		}
 		return this.abortAll(false);
@@ -340,7 +353,19 @@ export default class AsyncTaskManager {
 			runningTasks[key](destroy);
 		}
 
-		// We need to wait for microtasks to complete before resolving.
+		// For abort (destroy=false), resolve immediately without waiting for microtasks.
+		// The caller is explicitly aborting, so they don't need to wait.
+		if (!destroy) {
+			// Resolve any pending waitUntilComplete promises immediately
+			const resolvers = this.waitUntilCompleteResolvers;
+			this.waitUntilCompleteResolvers = [];
+			for (const resolver of resolvers) {
+				resolver.resolve();
+			}
+			return Promise.resolve();
+		}
+
+		// For destroy, we still need to wait for microtasks to complete before resolving.
 		return new Promise((resolve, reject) => {
 			this.waitUntilCompleteResolvers.push({ resolve, reject });
 			this.resolveWhenComplete();
