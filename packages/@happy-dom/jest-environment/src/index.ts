@@ -114,16 +114,20 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		});
 
 		// Jest is using the setTimeout function from Happy DOM internally for detecting when a test times out, but this causes window.happyDOM?.waitUntilComplete() and window.happyDOM?.abort() to not work as expected.
-		// Hopefully Jest can fix this in the future as this fix is not very pretty.
-		const happyDOMSetTimeout = this.global.setTimeout;
-		(<(...args: unknown[]) => number>this.global.setTimeout) = (...args: unknown[]): number => {
-			if (new Error('stack').stack!.includes('/jest-jasmine')) {
+		// This workaround is only needed for jest-jasmine runner (not jest-circus which is the default since Jest 27)
+		// Check once at setup time instead of on every setTimeout call
+		const isJasmineRunner = new Error('stack').stack?.includes('/jest-jasmine') ?? false;
+		if (isJasmineRunner) {
+			const happyDOMSetTimeout = this.global.setTimeout;
+			(<(...args: unknown[]) => number>this.global.setTimeout) = (...args: unknown[]): number => {
+				if (new Error('stack').stack!.includes('/jest-jasmine')) {
+					// @ts-ignore
+					return global.setTimeout.call(global, ...args);
+				}
 				// @ts-ignore
-				return global.setTimeout.call(global, ...args);
-			}
-			// @ts-ignore
-			return happyDOMSetTimeout.call(this.global, ...args);
-		};
+				return happyDOMSetTimeout.call(this.global, ...args);
+			};
+		}
 	}
 	/**
 	 * Respect any export conditions specified as options
