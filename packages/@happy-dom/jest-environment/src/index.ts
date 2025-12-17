@@ -195,13 +195,18 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 			this._modernFakeTimers.dispose();
 		}
 
-		await (<Window>(<unknown>this.global)).happyDOM.abort();
-		(<Window>(<unknown>this.global)).close();
+		// Use happyDOM.close() instead of window.close() because BrowserWindow.close()
+		// only destroys the window if there's an openerWindow, which doesn't exist in Jest.
+		// happyDOM.close() properly destroys the frame and window to prevent memory leaks.
+		await (<Window>(<unknown>this.global)).happyDOM.close();
 
+		// Null out references to help GC
+		this.window = null!;
 		this.global = null!;
 		this.moduleMocker = null!;
 		this._legacyFakeTimers = null;
 		this._modernFakeTimers = null;
+		this._projectConfig = null;
 	}
 
 	/**
