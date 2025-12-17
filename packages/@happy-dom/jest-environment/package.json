@@ -1,6 +1,6 @@
 {
-	"name": "@happy-dom/jest-environment",
-	"version": "0.0.0",
+	"name": "@marchaos/happy-dom-jest-environment",
+	"version": "20.0.11-fork.1",
 	"license": "MIT",
 	"homepage": "https://github.com/capricorn86/happy-dom/tree/master/packages/@happy-dom/jest-environment",
 	"repository": "https://github.com/capricorn86/happy-dom",
@@ -48,7 +48,7 @@
 		"testEnvironment": "./lib"
 	},
 	"dependencies": {
-		"happy-dom": "^0.0.0"
+		"happy-dom": "npm:@marchaos/happy-dom@^20.0.11-fork.1"
 	},
 	"devDependencies": {
 		"@jest/environment": "^30.0.0",
@@ -56,7 +56,7 @@
 		"@jest/types": "^30.0.0",
 		"@types/node": "^20.0.0",
 		"@types/jest": "^30.0.0",
-		"happy-dom": "^0.0.0",
+		"happy-dom": "npm:@marchaos/happy-dom@^20.0.11-fork.1",
 		"jest": "^30.0.0",
 		"jest-mock": "^30.0.0",
 		"jest-util": "^30.0.0",

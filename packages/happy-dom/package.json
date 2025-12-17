@@ -1,6 +1,6 @@
 {
-	"name": "happy-dom",
-	"version": "0.0.0",
+	"name": "@marchaos/happy-dom",
+	"version": "20.0.11-fork.1",
 	"license": "MIT",
 	"homepage": "https://github.com/capricorn86/happy-dom",
 	"repository": "https://github.com/capricorn86/happy-dom",
@@ -33,9 +33,9 @@
 		"test:debug": "vitest run --inspect-brk --no-file-parallelism"
 	},
 	"dependencies": {
-		"whatwg-mimetype": "^3.0.0",
+		"@types/node": "^20.0.0",
 		"@types/whatwg-mimetype": "^3.0.2",
-		"@types/node": "^20.0.0"
+		"whatwg-mimetype": "^3.0.0"
 	},
 	"devDependencies": {
 		"@vitest/ui": "^3.2.3",
