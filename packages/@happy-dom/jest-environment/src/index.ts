@@ -13,7 +13,7 @@ import { Global, Config } from '@jest/types';
  * Happy DOM Jest Environment.
  */
 export default class HappyDOMEnvironment implements JestEnvironment {
-	public fakeTimers: LegacyFakeTimers<number> | null = null;
+	private _legacyFakeTimers: LegacyFakeTimers<number> | null = null;
 	public fakeTimersModern: ModernFakeTimers | null = null;
 	public window: Window;
 	public global: Global.Global;
@@ -28,6 +28,7 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	public customExportConditions = ['node', 'node-addons'];
 
 	private _configuredExportConditions: string[];
+	private _projectConfig: Config.ProjectConfig | null = null;
 
 	/**
 	 * Constructor.
@@ -98,16 +99,10 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		// For some reason Jest removes the global setImmediate, so we need to add it back.
 		this.global.setImmediate = global.setImmediate;
 
-		this.fakeTimers = new LegacyFakeTimers({
-			config: projectConfig,
-			global: <typeof globalThis>(<unknown>this.window),
-			moduleMocker: this.moduleMocker,
-			timerConfig: {
-				idToRef: (id: number) => id,
-				refToId: (ref: number) => ref
-			}
-		});
+		// Store config for lazy LegacyFakeTimers initialization
+		this._projectConfig = projectConfig;
 
+		// Only create ModernFakeTimers eagerly - LegacyFakeTimers is lazy
 		this.fakeTimersModern = new ModernFakeTimers({
 			config: projectConfig,
 			global: <typeof globalThis>(<unknown>this.window)
@@ -129,6 +124,33 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 			};
 		}
 	}
+
+	/**
+	 * Lazy getter for legacy fake timers - only created when accessed.
+	 * Most tests don't use legacy fake timers, saving significant initialization time.
+	 */
+	public get fakeTimers(): LegacyFakeTimers<number> | null {
+		if (!this._legacyFakeTimers && this._projectConfig) {
+			this._legacyFakeTimers = new LegacyFakeTimers({
+				config: this._projectConfig,
+				global: <typeof globalThis>(<unknown>this.window),
+				moduleMocker: this.moduleMocker,
+				timerConfig: {
+					idToRef: (id: number) => id,
+					refToId: (ref: number) => ref
+				}
+			});
+		}
+		return this._legacyFakeTimers;
+	}
+
+	/**
+	 * Setter for legacy fake timers.
+	 */
+	public set fakeTimers(value: LegacyFakeTimers<number> | null) {
+		this._legacyFakeTimers = value;
+	}
+
 	/**
 	 * Respect any export conditions specified as options
 	 * https://jestjs.io/docs/configuration#testenvironmentoptions-object
@@ -150,7 +172,10 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	 * @returns Promise.
 	 */
 	public async teardown(): Promise<void> {
-		this.fakeTimers!.dispose();
+		// Only dispose legacy timers if they were actually created
+		if (this._legacyFakeTimers) {
+			this._legacyFakeTimers.dispose();
+		}
 		this.fakeTimersModern!.dispose();
 
 		await (<Window>(<unknown>this.global)).happyDOM.abort();
@@ -158,7 +183,7 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 
 		this.global = null!;
 		this.moduleMocker = null!;
-		this.fakeTimers = null;
+		this._legacyFakeTimers = null;
 		this.fakeTimersModern = null;
 	}
 
