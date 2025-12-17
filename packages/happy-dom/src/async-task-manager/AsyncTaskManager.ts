@@ -58,6 +58,15 @@ export default class AsyncTaskManager {
 				this.resolveWhenComplete();
 			});
 		}
+		// Fast path: if there are no running tasks, timers, or immediates, resolve immediately
+		if (
+			this.runningTaskCount === 0 &&
+			this.runningTimers.length === 0 &&
+			this.runningImmediates.length === 0 &&
+			!this.waitUntilCompleteTimer
+		) {
+			return Promise.resolve();
+		}
 		return this.abortAll(false);
 	}
 
