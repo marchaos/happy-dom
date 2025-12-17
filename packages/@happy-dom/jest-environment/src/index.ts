@@ -14,7 +14,7 @@ import { Global, Config } from '@jest/types';
  */
 export default class HappyDOMEnvironment implements JestEnvironment {
 	private _legacyFakeTimers: LegacyFakeTimers<number> | null = null;
-	public fakeTimersModern: ModernFakeTimers | null = null;
+	private _modernFakeTimers: ModernFakeTimers | null = null;
 	public window: Window;
 	public global: Global.Global;
 	public moduleMocker: ModuleMocker;
@@ -99,14 +99,8 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		// For some reason Jest removes the global setImmediate, so we need to add it back.
 		this.global.setImmediate = global.setImmediate;
 
-		// Store config for lazy LegacyFakeTimers initialization
+		// Store config for lazy fake timer initialization (both Legacy and Modern)
 		this._projectConfig = projectConfig;
-
-		// Only create ModernFakeTimers eagerly - LegacyFakeTimers is lazy
-		this.fakeTimersModern = new ModernFakeTimers({
-			config: projectConfig,
-			global: <typeof globalThis>(<unknown>this.window)
-		});
 
 		// Jest is using the setTimeout function from Happy DOM internally for detecting when a test times out, but this causes window.happyDOM?.waitUntilComplete() and window.happyDOM?.abort() to not work as expected.
 		// This workaround is only needed for jest-jasmine runner (not jest-circus which is the default since Jest 27)
@@ -152,6 +146,27 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	}
 
 	/**
+	 * Lazy getter for modern fake timers - only created when accessed.
+	 * This saves initialization time for tests that don't use fake timers.
+	 */
+	public get fakeTimersModern(): ModernFakeTimers | null {
+		if (!this._modernFakeTimers && this._projectConfig) {
+			this._modernFakeTimers = new ModernFakeTimers({
+				config: this._projectConfig,
+				global: <typeof globalThis>(<unknown>this.window)
+			});
+		}
+		return this._modernFakeTimers;
+	}
+
+	/**
+	 * Setter for modern fake timers.
+	 */
+	public set fakeTimersModern(value: ModernFakeTimers | null) {
+		this._modernFakeTimers = value;
+	}
+
+	/**
 	 * Respect any export conditions specified as options
 	 * https://jestjs.io/docs/configuration#testenvironmentoptions-object
 	 */
@@ -172,11 +187,13 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	 * @returns Promise.
 	 */
 	public async teardown(): Promise<void> {
-		// Only dispose legacy timers if they were actually created
+		// Only dispose fake timers if they were actually created
 		if (this._legacyFakeTimers) {
 			this._legacyFakeTimers.dispose();
 		}
-		this.fakeTimersModern!.dispose();
+		if (this._modernFakeTimers) {
+			this._modernFakeTimers.dispose();
+		}
 
 		await (<Window>(<unknown>this.global)).happyDOM.abort();
 		(<Window>(<unknown>this.global)).close();
@@ -184,7 +201,7 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		this.global = null!;
 		this.moduleMocker = null!;
 		this._legacyFakeTimers = null;
-		this.fakeTimersModern = null;
+		this._modernFakeTimers = null;
 	}
 
 	/**
