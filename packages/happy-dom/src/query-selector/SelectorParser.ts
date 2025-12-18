@@ -129,7 +129,8 @@ export default class SelectorParser {
 			}
 		}
 
-		const regexp = new RegExp(SELECTOR_REGEXP);
+		// Reset lastIndex instead of creating new RegExp object (more efficient)
+		SELECTOR_REGEXP.lastIndex = 0;
 		let currentSelectorItem: SelectorItem = new SelectorItem({
 			scope,
 			combinator: SelectorCombinatorEnum.descendant,
@@ -140,7 +141,7 @@ export default class SelectorParser {
 		let isValid = false;
 		let match;
 
-		while ((match = regexp.exec(selector))) {
+		while ((match = SELECTOR_REGEXP.exec(selector))) {
 			if (match[0]) {
 				isValid = true;
 

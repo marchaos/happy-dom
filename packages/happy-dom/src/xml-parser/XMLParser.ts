@@ -456,11 +456,12 @@ export default class XMLParser {
 		const namespacePrefix = this.namespacePrefixStack![this.namespacePrefixStack!.length - 1];
 
 		if (attributeString) {
-			const attributeRegexp = new RegExp(ATTRIBUTE_REGEXP, 'gm');
+			// Reset lastIndex instead of creating new RegExp (more efficient)
+			ATTRIBUTE_REGEXP.lastIndex = 0;
 			let attributeMatch: RegExpExecArray | null;
 			let lastIndex = 0;
 
-			while ((attributeMatch = attributeRegexp.exec(attributeString))) {
+			while ((attributeMatch = ATTRIBUTE_REGEXP.exec(attributeString))) {
 				const textBetweenAttributes = attributeString
 					.substring(lastIndex, attributeMatch.index)
 					.replace(SPACE_REGEXP, '');
@@ -572,7 +573,7 @@ export default class XMLParser {
 					return;
 				}
 
-				lastIndex = attributeRegexp.lastIndex;
+				lastIndex = ATTRIBUTE_REGEXP.lastIndex;
 			}
 
 			const attributeStringEnd = attributeString.substring(lastIndex).replace(SPACE_REGEXP, '');
@@ -724,11 +725,12 @@ export default class XMLParser {
 
 		const docTypeString = docTypeSplit.slice(1).join(' ');
 		const attributes = [];
-		const attributeRegExp = new RegExp(DOCUMENT_TYPE_ATTRIBUTE_REGEXP, 'gm');
+		// Reset lastIndex instead of creating new RegExp (more efficient)
+		DOCUMENT_TYPE_ATTRIBUTE_REGEXP.lastIndex = 0;
 		const isPublic = docTypeString.toUpperCase().includes('PUBLIC');
 		let attributeMatch;
 
-		while ((attributeMatch = attributeRegExp.exec(docTypeString))) {
+		while ((attributeMatch = DOCUMENT_TYPE_ATTRIBUTE_REGEXP.exec(docTypeString))) {
 			attributes.push(attributeMatch[1]);
 		}
 
