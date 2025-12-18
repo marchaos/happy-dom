@@ -153,7 +153,7 @@ export default class HTMLSerializer {
 	private getAttributes(element: Element): string {
 		let attributeString = '';
 
-		const attributes = (<Element>element)[PropertySymbol.attributes][PropertySymbol.items];
+		const attributes = (<Element>element)[PropertySymbol.attributes][PropertySymbol.data].items;
 
 		if (!attributes.has(':is') && element[PropertySymbol.isValue]) {
 			attributeString +=

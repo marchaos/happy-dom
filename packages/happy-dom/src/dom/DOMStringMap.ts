@@ -47,8 +47,8 @@ export default class DOMStringMap {
 				// "The result List must contain the keys of all non-configurable own properties of the target object."
 				const keys = [];
 				for (const items of element[PropertySymbol.attributes][
-					PropertySymbol.itemsByName
-				].values()) {
+					PropertySymbol.data
+				].itemsByName.values()) {
 					if (items[0][PropertySymbol.name]!.startsWith('data-')) {
 						keys.push(
 							DOMStringMapUtility.kebabToCamelCase(

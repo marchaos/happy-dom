@@ -200,10 +200,10 @@ export default class NodeUtility {
 	 */
 	public static attributeListsEqual(elementA: Element, elementB: Element): boolean {
 		const attributesA = Array.from(
-			elementA[PropertySymbol.attributes][PropertySymbol.items].values()
+			elementA[PropertySymbol.attributes][PropertySymbol.data].items.values()
 		);
 		const attributesB = Array.from(
-			elementB[PropertySymbol.attributes][PropertySymbol.items].values()
+			elementB[PropertySymbol.attributes][PropertySymbol.data].items.values()
 		);
 		for (const attributeA of attributesA) {
 			let found = false;
@@ -257,8 +257,8 @@ export default class NodeUtility {
 					elementA[PropertySymbol.namespaceURI] !== elementB[PropertySymbol.namespaceURI] ||
 					elementA[PropertySymbol.prefix] !== elementB[PropertySymbol.prefix] ||
 					elementA[PropertySymbol.localName] !== elementB[PropertySymbol.localName] ||
-					elementA[PropertySymbol.attributes][PropertySymbol.items].size !==
-						elementB[PropertySymbol.attributes][PropertySymbol.items].size
+					elementA[PropertySymbol.attributes][PropertySymbol.data].items.size !==
+						elementB[PropertySymbol.attributes][PropertySymbol.data].items.size
 				) {
 					return false;
 				}

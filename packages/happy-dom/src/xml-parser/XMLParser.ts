@@ -549,7 +549,7 @@ export default class XMLParser {
 								);
 								this.nextElement[PropertySymbol.attributes] = attributes;
 								attributes[PropertySymbol.ownerElement] = this.nextElement;
-								for (const item of attributes[PropertySymbol.items].values()) {
+								for (const item of attributes[PropertySymbol.data].items.values()) {
 									item[PropertySymbol.ownerElement] = this.nextElement;
 								}
 							} else {

@@ -8,6 +8,7 @@ import HTMLElementUtility from './HTMLElementUtility.js';
 import DOMStringMap from '../../dom/DOMStringMap.js';
 import Attr from '../attr/Attr.js';
 import ElementEventAttributeUtility from '../element/ElementEventAttributeUtility.js';
+import LazyNamedNodeMapData from '../element/LazyNamedNodeMapData.js';
 
 /**
  * HTML Element.
@@ -1092,14 +1093,10 @@ export default class HTMLElement extends Element {
 		newElement[PropertySymbol.isValue] = this[PropertySymbol.isValue];
 		newElement[PropertySymbol.cache] = this[PropertySymbol.cache];
 		newElement[PropertySymbol.affectsCache] = this[PropertySymbol.affectsCache];
-		newElement[PropertySymbol.attributes][PropertySymbol.itemsByNamespaceURI] =
-			this[PropertySymbol.attributes][PropertySymbol.itemsByNamespaceURI];
-		newElement[PropertySymbol.attributes][PropertySymbol.itemsByName] =
-			this[PropertySymbol.attributes][PropertySymbol.itemsByName];
-		newElement[PropertySymbol.attributes][PropertySymbol.items] =
-			this[PropertySymbol.attributes][PropertySymbol.items];
+		newElement[PropertySymbol.attributes][PropertySymbol.data] =
+			this[PropertySymbol.attributes][PropertySymbol.data];
 
-		for (const attr of newElement[PropertySymbol.attributes][PropertySymbol.items].values()) {
+		for (const attr of newElement[PropertySymbol.attributes][PropertySymbol.data].items.values()) {
 			attr[PropertySymbol.ownerElement] = newElement;
 		}
 
@@ -1120,9 +1117,7 @@ export default class HTMLElement extends Element {
 		this[PropertySymbol.isValue] = null;
 		this[PropertySymbol.cache] = newCache;
 		this[PropertySymbol.affectsCache] = [];
-		this[PropertySymbol.attributes][PropertySymbol.itemsByNamespaceURI] = new Map();
-		this[PropertySymbol.attributes][PropertySymbol.itemsByName] = new Map();
-		this[PropertySymbol.attributes][PropertySymbol.items] = new Map();
+		this[PropertySymbol.attributes][PropertySymbol.data] = new LazyNamedNodeMapData();
 
 		for (const node of newElement[PropertySymbol.nodeArray]) {
 			node[PropertySymbol.parentNode] = newElement;

@@ -566,7 +566,7 @@ export default class Element
 
 		clone[PropertySymbol.attributes] = new NamedNodeMap(clone);
 
-		for (const attr of this[PropertySymbol.attributes][PropertySymbol.items].values()) {
+		for (const attr of this[PropertySymbol.attributes][PropertySymbol.data].items.values()) {
 			clone[PropertySymbol.attributes].setNamedItem(attr.cloneNode(deep));
 		}
 
@@ -770,7 +770,7 @@ export default class Element
 	 */
 	public getAttributeNames(): string[] {
 		const names = [];
-		for (const item of this[PropertySymbol.attributes][PropertySymbol.items].values()) {
+		for (const item of this[PropertySymbol.attributes][PropertySymbol.data].items.values()) {
 			names.push(item[PropertySymbol.name]!);
 		}
 		return names;
@@ -854,7 +854,7 @@ export default class Element
 	 * @returns "true" if the element has attributes.
 	 */
 	public hasAttributes(): boolean {
-		return this[PropertySymbol.attributes][PropertySymbol.items].size > 0;
+		return this[PropertySymbol.attributes][PropertySymbol.data].hasItems;
 	}
 
 	/**

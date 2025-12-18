@@ -1066,8 +1066,8 @@ export default class Node extends EventTarget {
 				 * 5.2.1. For each attr in node2’s attribute list:
 				 */
 				for (const attribute of (<Element>node2)[PropertySymbol.attributes][
-					PropertySymbol.items
-				].values()) {
+					PropertySymbol.data
+				].items.values()) {
 					/**
 					 * 5.2.1.1. If attr equals attr1, then return the result of adding DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC and DOCUMENT_POSITION_PRECEDING.
 					 */

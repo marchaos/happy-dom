@@ -21,7 +21,7 @@ export default class NamedNodeMapProxyFactory {
 		const proxy = new Proxy<NamedNodeMap>(namedNodeMap, {
 			get: (target, property) => {
 				if (property === 'length') {
-					return namedNodeMap[PropertySymbol.items].size;
+					return namedNodeMap[PropertySymbol.data].items.size;
 				}
 				if (typeof property === 'symbol') {
 					return (<any>target)[property];
@@ -68,8 +68,8 @@ export default class NamedNodeMapProxyFactory {
 				return true;
 			},
 			ownKeys(): string[] {
-				const keys = Array.from(namedNodeMap[PropertySymbol.items].keys());
-				for (let i = 0, max = namedNodeMap[PropertySymbol.items].size; i < max; i++) {
+				const keys = Array.from(namedNodeMap[PropertySymbol.data].items.keys());
+				for (let i = 0, max = namedNodeMap[PropertySymbol.data].items.size; i < max; i++) {
 					keys.push(String(i));
 				}
 				return keys;
@@ -79,13 +79,13 @@ export default class NamedNodeMapProxyFactory {
 					return false;
 				}
 
-				if (property in target || namedNodeMap[PropertySymbol.items].has(property)) {
+				if (property in target || namedNodeMap[PropertySymbol.data].items.has(property)) {
 					return true;
 				}
 
 				const index = Number(property);
 
-				if (!isNaN(index) && index >= 0 && index < namedNodeMap[PropertySymbol.items].size) {
+				if (!isNaN(index) && index >= 0 && index < namedNodeMap[PropertySymbol.data].items.size) {
 					return true;
 				}
 
@@ -122,7 +122,7 @@ export default class NamedNodeMapProxyFactory {
 					return;
 				}
 
-				const items = namedNodeMap[PropertySymbol.items].get(<string>property);
+				const items = namedNodeMap[PropertySymbol.data].items.get(<string>property);
 
 				if (items) {
 					return {

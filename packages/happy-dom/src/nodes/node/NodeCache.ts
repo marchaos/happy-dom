@@ -20,6 +20,9 @@ export default class NodeCache {
 	private _elementById: Map<string, ICachedElementByIdResult> | null = null;
 	public computedStyle: ICachedComputedStyleResult | null = null;
 
+	/**
+	 *
+	 */
 	public get querySelector(): Map<string, ICachedQuerySelectorResult> {
 		if (this._querySelector === null) {
 			this._querySelector = new Map();
@@ -27,10 +30,16 @@ export default class NodeCache {
 		return this._querySelector;
 	}
 
+	/**
+	 *
+	 */
 	public set querySelector(value: Map<string, ICachedQuerySelectorResult> | null) {
 		this._querySelector = value;
 	}
 
+	/**
+	 *
+	 */
 	public get querySelectorAll(): Map<string, ICachedQuerySelectorAllResult> {
 		if (this._querySelectorAll === null) {
 			this._querySelectorAll = new Map();
@@ -38,10 +47,16 @@ export default class NodeCache {
 		return this._querySelectorAll;
 	}
 
+	/**
+	 *
+	 */
 	public set querySelectorAll(value: Map<string, ICachedQuerySelectorAllResult> | null) {
 		this._querySelectorAll = value;
 	}
 
+	/**
+	 *
+	 */
 	public get matches(): Map<string, ICachedMatchesResult> {
 		if (this._matches === null) {
 			this._matches = new Map();
@@ -49,10 +64,16 @@ export default class NodeCache {
 		return this._matches;
 	}
 
+	/**
+	 *
+	 */
 	public set matches(value: Map<string, ICachedMatchesResult> | null) {
 		this._matches = value;
 	}
 
+	/**
+	 *
+	 */
 	public get elementsByTagName(): Map<string, ICachedElementsByTagNameResult> {
 		if (this._elementsByTagName === null) {
 			this._elementsByTagName = new Map();
@@ -60,10 +81,16 @@ export default class NodeCache {
 		return this._elementsByTagName;
 	}
 
+	/**
+	 *
+	 */
 	public set elementsByTagName(value: Map<string, ICachedElementsByTagNameResult> | null) {
 		this._elementsByTagName = value;
 	}
 
+	/**
+	 *
+	 */
 	public get elementsByTagNameNS(): Map<string, ICachedElementsByTagNameResult> {
 		if (this._elementsByTagNameNS === null) {
 			this._elementsByTagNameNS = new Map();
@@ -71,10 +98,16 @@ export default class NodeCache {
 		return this._elementsByTagNameNS;
 	}
 
+	/**
+	 *
+	 */
 	public set elementsByTagNameNS(value: Map<string, ICachedElementsByTagNameResult> | null) {
 		this._elementsByTagNameNS = value;
 	}
 
+	/**
+	 *
+	 */
 	public get elementByTagName(): Map<string, ICachedElementByTagNameResult> {
 		if (this._elementByTagName === null) {
 			this._elementByTagName = new Map();
@@ -82,10 +115,16 @@ export default class NodeCache {
 		return this._elementByTagName;
 	}
 
+	/**
+	 *
+	 */
 	public set elementByTagName(value: Map<string, ICachedElementByTagNameResult> | null) {
 		this._elementByTagName = value;
 	}
 
+	/**
+	 *
+	 */
 	public get elementById(): Map<string, ICachedElementByIdResult> {
 		if (this._elementById === null) {
 			this._elementById = new Map();
@@ -93,6 +132,9 @@ export default class NodeCache {
 		return this._elementById;
 	}
 
+	/**
+	 *
+	 */
 	public set elementById(value: Map<string, ICachedElementByIdResult> | null) {
 		this._elementById = value;
 	}
