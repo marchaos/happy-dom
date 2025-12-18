@@ -11,14 +11,7 @@ import MutationRecord from '../../mutation-observer/MutationRecord.js';
 import MutationTypeEnum from '../../mutation-observer/MutationTypeEnum.js';
 import DOMExceptionNameEnum from '../../exception/DOMExceptionNameEnum.js';
 import IMutationListener from '../../mutation-observer/IMutationListener.js';
-import ICachedQuerySelectorAllResult from './ICachedQuerySelectorAllResult.js';
-import ICachedQuerySelectorResult from './ICachedQuerySelectorResult.js';
-import ICachedMatchesResult from './ICachedMatchesResult.js';
-import ICachedElementsByTagNameResult from './ICachedElementsByTagNameResult.js';
-import ICachedElementByTagNameResult from './ICachedElementByTagNameResult.js';
-import ICachedComputedStyleResult from './ICachedComputedStyleResult.js';
 import ICachedResult from './ICachedResult.js';
-import ICachedElementByIdResult from './ICachedElementByIdResult.js';
 import HTMLStyleElement from '../html-style-element/HTMLStyleElement.js';
 import HTMLFormElement from '../html-form-element/HTMLFormElement.js';
 import HTMLSelectElement from '../html-select-element/HTMLSelectElement.js';
@@ -26,6 +19,7 @@ import HTMLTextAreaElement from '../html-text-area-element/HTMLTextAreaElement.j
 import HTMLSlotElement from '../html-slot-element/HTMLSlotElement.js';
 import NodeFactory from '../NodeFactory.js';
 import SVGStyleElement from '../svg-style-element/SVGStyleElement.js';
+import NodeCache from './NodeCache.js';
 
 /**
  * Node.
@@ -82,25 +76,7 @@ export default class Node extends EventTarget {
 	public [PropertySymbol.elementArray]: Element[] = [];
 	public [PropertySymbol.childNodes]: NodeList<Node> | null = null;
 	public [PropertySymbol.assignedToSlot]: HTMLSlotElement | null = null;
-	public [PropertySymbol.cache]: {
-		querySelector: Map<string, ICachedQuerySelectorResult>;
-		querySelectorAll: Map<string, ICachedQuerySelectorAllResult>;
-		matches: Map<string, ICachedMatchesResult>;
-		elementsByTagName: Map<string, ICachedElementsByTagNameResult>;
-		elementsByTagNameNS: Map<string, ICachedElementsByTagNameResult>;
-		elementByTagName: Map<string, ICachedElementByTagNameResult>;
-		elementById: Map<string, ICachedElementByIdResult>;
-		computedStyle: ICachedComputedStyleResult | null;
-	} = {
-		querySelector: new Map(),
-		querySelectorAll: new Map(),
-		matches: new Map(),
-		elementsByTagName: new Map(),
-		elementsByTagNameNS: new Map(),
-		elementByTagName: new Map(),
-		elementById: new Map(),
-		computedStyle: null
-	};
+	public [PropertySymbol.cache]: NodeCache = new NodeCache();
 	public [PropertySymbol.affectsCache]: ICachedResult[] = [];
 
 	// Needs to be implemented by the sub-class
@@ -848,68 +824,8 @@ export default class Node extends EventTarget {
 	public [PropertySymbol.clearCache](): void {
 		const cache = this[PropertySymbol.cache];
 
-		if (cache.querySelector.size) {
-			for (const item of cache.querySelector.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.querySelector = new Map();
-		}
-
-		if (cache.querySelectorAll.size) {
-			for (const item of cache.querySelectorAll.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.querySelectorAll = new Map();
-		}
-
-		if (cache.matches.size) {
-			for (const item of cache.matches.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.matches = new Map();
-		}
-
-		if (cache.elementsByTagName.size) {
-			for (const item of cache.elementsByTagName.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.elementsByTagName = new Map();
-		}
-
-		if (cache.elementsByTagNameNS.size) {
-			for (const item of cache.elementsByTagNameNS.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.elementsByTagNameNS = new Map();
-		}
-
-		if (cache.elementByTagName.size) {
-			for (const item of cache.elementByTagName.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.elementByTagName = new Map();
-		}
-
-		if (cache.elementById.size) {
-			for (const item of cache.elementById.values()) {
-				if (item.result) {
-					item.result = null;
-				}
-			}
-			cache.elementById = new Map();
-		}
+		// Use NodeCache.clear() which handles lazy Maps efficiently
+		cache.clear();
 
 		const affectsCache = this[PropertySymbol.affectsCache];
 
