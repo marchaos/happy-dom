@@ -1,11 +1,12 @@
 /* eslint-disable filenames/match-exported */
 
-import VM from 'vm';
 import * as JestUtil from 'jest-util';
 import { ModuleMocker } from 'jest-mock';
 import { LegacyFakeTimers, ModernFakeTimers } from '@jest/fake-timers';
 import { JestEnvironment, EnvironmentContext } from '@jest/environment';
 import { Window, BrowserErrorCaptureEnum, IOptionalBrowserSettings } from 'happy-dom';
+// @ts-ignore - Internal import for memory leak fix
+import NodeFactory from 'happy-dom/lib/nodes/NodeFactory.js';
 import { Script } from 'vm';
 import { Global, Config } from '@jest/types';
 
@@ -15,7 +16,7 @@ import { Global, Config } from '@jest/types';
 export default class HappyDOMEnvironment implements JestEnvironment {
 	private _legacyFakeTimers: LegacyFakeTimers<number> | null = null;
 	private _modernFakeTimers: ModernFakeTimers | null = null;
-	public window: Window;
+	public window: Window | null;
 	public global: Global.Global;
 	public moduleMocker: ModuleMocker;
 
@@ -82,7 +83,9 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 				errorCapture: BrowserErrorCaptureEnum.disabled
 			}
 		});
+
 		this.global = <Global.Global>(<unknown>this.window);
+
 		this.moduleMocker = new ModuleMocker(<typeof globalThis>(<unknown>this.window));
 
 		// Node's error-message stack size is limited to 10, but it's pretty useful to see more than that when a test fails.
@@ -92,7 +95,7 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		this.global.Buffer = Buffer;
 
 		// Needed as Jest is using it
-		this.window['global'] = this.global;
+		(<any>this.window)['global'] = this.global;
 
 		JestUtil.installCommonGlobals(<typeof globalThis>(<unknown>this.window), globals);
 
@@ -195,18 +198,27 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 			this._modernFakeTimers.dispose();
 		}
 
-		// Use happyDOM.close() instead of window.close() because BrowserWindow.close()
-		// only destroys the window if there's an openerWindow, which doesn't exist in Jest.
-		// happyDOM.close() properly destroys the frame and window to prevent memory leaks.
-		await (<Window>(<unknown>this.global)).happyDOM.close();
+		// Use happyDOM.close() which properly destroys the frame and window
+		if (this.window) {
+			await this.window.happyDOM.close();
+		}
 
-		// Null out references to help GC
-		this.window = null!;
+		// Null references to help GC
+		this.window = null;
 		this.global = null!;
 		this.moduleMocker = null!;
 		this._legacyFakeTimers = null;
 		this._modernFakeTimers = null;
 		this._projectConfig = null;
+
+		// CRITICAL: Clear NodeFactory.ownerDocuments to fix memory leak
+		// Due to a bug in happy-dom, documents are pushed but not always pulled from this static array.
+		// Operations like textContent/innerHTML create Text nodes via createTextNode which pushes to
+		// ownerDocuments, but the Proxy-based class system causes pullOwnerDocument() to be skipped.
+		// Without clearing this, windows cannot be garbage collected.
+		if (NodeFactory.ownerDocuments) {
+			NodeFactory.ownerDocuments.length = 0;
+		}
 	}
 
 	/**
@@ -216,6 +228,9 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	 * @returns Result.
 	 */
 	public runScript(script: Script): null {
+		if (!this.global) {
+			return null;
+		}
 		return script.runInContext(this.global);
 	}
 
@@ -224,7 +239,7 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 	 *
 	 * @returns Context.
 	 */
-	public getVmContext(): VM.Context {
+	public getVmContext(): Global.Global | null {
 		return this.global;
 	}
 }
