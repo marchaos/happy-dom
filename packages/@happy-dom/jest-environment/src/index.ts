@@ -198,9 +198,10 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 			this._modernFakeTimers.dispose();
 		}
 
-		// Use happyDOM.close() which properly destroys the frame and window
+		// Use abort() instead of close() - it's ~300x faster because it doesn't wait for microtasks.
+		// In Jest teardown we're destroying everything anyway, so no need to wait.
 		if (this.window) {
-			await this.window.happyDOM.close();
+			await this.window.happyDOM.abort();
 		}
 
 		// Null references to help GC
