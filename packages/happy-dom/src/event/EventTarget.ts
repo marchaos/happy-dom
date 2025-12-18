@@ -8,6 +8,7 @@ import TEventListener from './TEventListener.js';
 import TEventListenerObject from './TEventListenerObject.js';
 import TEventListenerFunction from './TEventListenerFunction.js';
 import BrowserWindow from '../window/BrowserWindow.js';
+import { LazyListenerMap, LazyOptionsMap } from './EventListenerContainer.js';
 
 /**
  * Handles events.
@@ -16,20 +17,9 @@ export default class EventTarget {
 	// Injected by WindowContextClassExtender
 	protected declare [PropertySymbol.window]: BrowserWindow;
 
-	public readonly [PropertySymbol.listeners]: {
-		capturing: Map<string, TEventListener[]>;
-		bubbling: Map<string, TEventListener[]>;
-	} = {
-		capturing: new Map(),
-		bubbling: new Map()
-	};
-	public readonly [PropertySymbol.listenerOptions]: {
-		capturing: Map<string, IEventListenerOptions[]>;
-		bubbling: Map<string, IEventListenerOptions[]>;
-	} = {
-		capturing: new Map(),
-		bubbling: new Map()
-	};
+	// Lazy listener containers - Maps are only created when first accessed
+	public readonly [PropertySymbol.listeners]: LazyListenerMap = new LazyListenerMap();
+	public readonly [PropertySymbol.listenerOptions]: LazyOptionsMap = new LazyOptionsMap();
 
 	/**
 	 * Return a default description for the EventTarget class.
@@ -170,10 +160,8 @@ export default class EventTarget {
 	 * Destroys the node.
 	 */
 	public [PropertySymbol.destroy](): void {
-		this[PropertySymbol.listeners].capturing.clear();
-		this[PropertySymbol.listeners].bubbling.clear();
-		this[PropertySymbol.listenerOptions].capturing.clear();
-		this[PropertySymbol.listenerOptions].bubbling.clear();
+		this[PropertySymbol.listeners].clear();
+		this[PropertySymbol.listenerOptions].clear();
 	}
 
 	/**

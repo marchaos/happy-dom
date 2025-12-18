@@ -1,3 +1,5 @@
+// Cache for ASCII case conversion with max size to prevent unbounded growth
+const CACHE_MAX_SIZE = 10000;
 const ASCII_LOWER_CASE_CACHE: Map<string, string> = new Map();
 const ASCII_UPPER_CASE_CACHE: Map<string, string> = new Map();
 
@@ -26,6 +28,10 @@ export default class StringUtility {
 				newText += char;
 			}
 		}
+		// Limit cache size to prevent unbounded memory growth
+		if (ASCII_LOWER_CASE_CACHE.size >= CACHE_MAX_SIZE) {
+			ASCII_LOWER_CASE_CACHE.clear();
+		}
 		ASCII_LOWER_CASE_CACHE.set(text, newText);
 		return newText;
 	}
@@ -50,6 +56,10 @@ export default class StringUtility {
 			} else {
 				newText += char;
 			}
+		}
+		// Limit cache size to prevent unbounded memory growth
+		if (ASCII_UPPER_CASE_CACHE.size >= CACHE_MAX_SIZE) {
+			ASCII_UPPER_CASE_CACHE.clear();
 		}
 		ASCII_UPPER_CASE_CACHE.set(text, newText);
 		return newText;
