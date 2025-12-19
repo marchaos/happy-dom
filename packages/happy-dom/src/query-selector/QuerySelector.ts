@@ -505,6 +505,7 @@ export default class QuerySelector {
 	 * @param cachedItem Cached item.
 	 * @param [selectorIndex] Current index in selectorItems array.
 	 * @param [documentPosition] Document position of the element.
+	 * @param matched
 	 * @returns Document position and element map.
 	 */
 	private static findAll(
@@ -566,7 +567,15 @@ export default class QuerySelector {
 							const index = children.indexOf(child);
 							for (let j = index + 1; j < children.length; j++) {
 								const sibling = children[j];
-								this.findAll(rootElement, [sibling], selectorItems, cachedItem, selectorIndex + 1, position, matched);
+								this.findAll(
+									rootElement,
+									[sibling],
+									selectorItems,
+									cachedItem,
+									selectorIndex + 1,
+									position,
+									matched
+								);
 							}
 							break;
 					}
@@ -574,7 +583,15 @@ export default class QuerySelector {
 			}
 
 			if (selectorItem.combinator === SelectorCombinatorEnum.descendant && childrenOfChild.length) {
-				this.findAll(rootElement, childrenOfChild, selectorItems, cachedItem, selectorIndex, position, matched);
+				this.findAll(
+					rootElement,
+					childrenOfChild,
+					selectorItems,
+					cachedItem,
+					selectorIndex,
+					position,
+					matched
+				);
 			}
 		}
 

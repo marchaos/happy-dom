@@ -173,7 +173,9 @@ export default class HTMLParser {
 		this.readState = <MarkupReadStateEnum>MarkupReadStateEnum.any;
 		this.documentStructure = null;
 		this.startTagIndex = 0;
-		this.markupRegExp = new RegExp(MARKUP_REGEXP, 'gm');
+		// Reuse global RegExp by resetting lastIndex instead of creating new one
+		MARKUP_REGEXP.lastIndex = 0;
+		this.markupRegExp = MARKUP_REGEXP;
 
 		if (this.rootNode instanceof Document) {
 			const { doctype, documentElement, head, body } = <Document>this.rootNode;
