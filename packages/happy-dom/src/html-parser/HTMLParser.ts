@@ -399,10 +399,11 @@ export default class HTMLParser {
 				this.nextElement !== this.documentStructure.nodes.head ||
 				this.documentStructure.level < HTMLDocumentStructureLevelEnum.body)
 		) {
-			const attributeRegexp = new RegExp(ATTRIBUTE_REGEXP, 'gm');
+			// Reuse global RegExp by resetting lastIndex
+			ATTRIBUTE_REGEXP.lastIndex = 0;
 			let attributeMatch: RegExpExecArray | null;
 
-			while ((attributeMatch = attributeRegexp.exec(attributeString))) {
+			while ((attributeMatch = ATTRIBUTE_REGEXP.exec(attributeString))) {
 				if (
 					(attributeMatch[1] && attributeMatch[2]) ||
 					(attributeMatch[3] && attributeMatch[5] === '"') ||
@@ -898,11 +899,12 @@ export default class HTMLParser {
 
 		const docTypeString = docTypeSplit.slice(1).join(' ');
 		const attributes = [];
-		const attributeRegExp = new RegExp(DOCUMENT_TYPE_ATTRIBUTE_REGEXP, 'gm');
+		// Reuse global RegExp by resetting lastIndex
+		DOCUMENT_TYPE_ATTRIBUTE_REGEXP.lastIndex = 0;
 		const isPublic = docTypeString.toUpperCase().includes('PUBLIC');
 		let attributeMatch;
 
-		while ((attributeMatch = attributeRegExp.exec(docTypeString))) {
+		while ((attributeMatch = DOCUMENT_TYPE_ATTRIBUTE_REGEXP.exec(docTypeString))) {
 			attributes.push(attributeMatch[1]);
 		}
 
