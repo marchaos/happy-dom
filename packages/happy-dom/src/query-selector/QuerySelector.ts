@@ -513,11 +513,11 @@ export default class QuerySelector {
 		selectorItems: SelectorItem[],
 		cachedItem: ICachedQuerySelectorAllItem,
 		selectorIndex = 0,
-		documentPosition?: string
+		documentPosition?: string,
+		matched: DocumentPositionAndElement[] = []
 	): DocumentPositionAndElement[] {
 		const selectorItem = selectorItems[selectorIndex];
 		const nextSelectorItem = selectorItems[selectorIndex + 1];
-		let matched: DocumentPositionAndElement[] = [];
 
 		for (let i = 0, max = children.length; i < max; i++) {
 			const child = children[i];
@@ -539,38 +539,34 @@ export default class QuerySelector {
 						case SelectorCombinatorEnum.adjacentSibling:
 							const nextElementSibling = child.nextElementSibling;
 							if (nextElementSibling) {
-								matched = matched.concat(
-									this.findAll(
-										rootElement,
-										[nextElementSibling],
-										selectorItems,
-										cachedItem,
-										selectorIndex + 1,
-										position
-									)
+								this.findAll(
+									rootElement,
+									[nextElementSibling],
+									selectorItems,
+									cachedItem,
+									selectorIndex + 1,
+									position,
+									matched
 								);
 							}
 							break;
 						case SelectorCombinatorEnum.descendant:
 						case SelectorCombinatorEnum.child:
-							matched = matched.concat(
-								this.findAll(
-									rootElement,
-									childrenOfChild,
-									selectorItems,
-									cachedItem,
-									selectorIndex + 1,
-									position
-								)
+							this.findAll(
+								rootElement,
+								childrenOfChild,
+								selectorItems,
+								cachedItem,
+								selectorIndex + 1,
+								position,
+								matched
 							);
 							break;
 						case SelectorCombinatorEnum.subsequentSibling:
 							const index = children.indexOf(child);
 							for (let j = index + 1; j < children.length; j++) {
 								const sibling = children[j];
-								matched = matched.concat(
-									this.findAll(rootElement, [sibling], selectorItems, cachedItem, selectorIndex + 1, position)
-								);
+								this.findAll(rootElement, [sibling], selectorItems, cachedItem, selectorIndex + 1, position, matched);
 							}
 							break;
 					}
@@ -578,9 +574,7 @@ export default class QuerySelector {
 			}
 
 			if (selectorItem.combinator === SelectorCombinatorEnum.descendant && childrenOfChild.length) {
-				matched = matched.concat(
-					this.findAll(rootElement, childrenOfChild, selectorItems, cachedItem, selectorIndex, position)
-				);
+				this.findAll(rootElement, childrenOfChild, selectorItems, cachedItem, selectorIndex, position, matched);
 			}
 		}
 
