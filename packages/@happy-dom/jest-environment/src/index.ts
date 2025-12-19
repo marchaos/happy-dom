@@ -7,6 +7,10 @@ import { JestEnvironment, EnvironmentContext } from '@jest/environment';
 import { Window, BrowserErrorCaptureEnum, IOptionalBrowserSettings } from 'happy-dom';
 // @ts-ignore - Internal import for memory leak fix
 import NodeFactory from 'happy-dom/lib/nodes/NodeFactory.js';
+// @ts-ignore - Internal import for memory leak fix
+import WindowBrowserContext from 'happy-dom/lib/window/WindowBrowserContext.js';
+// @ts-ignore - Internal import for memory leak fix
+import * as PropertySymbol from 'happy-dom/lib/PropertySymbol.js';
 import { Script } from 'vm';
 import { Global, Config } from '@jest/types';
 
@@ -219,6 +223,15 @@ export default class HappyDOMEnvironment implements JestEnvironment {
 		// Without clearing this, windows cannot be garbage collected.
 		if (NodeFactory.ownerDocuments) {
 			NodeFactory.ownerDocuments.length = 0;
+		}
+
+		// CRITICAL: Clear WindowBrowserContext.browserFrames to fix memory leak
+		// The browserFrames static Map holds references to browser frames, which in turn hold
+		// references to windows. When using abort() instead of close(), removeWindowBrowserFrameRelation()
+		// is not called, causing entries to accumulate. Without clearing this, windows cannot be GC'd.
+		const browserFrames = (<any>WindowBrowserContext)[PropertySymbol.browserFrames];
+		if (browserFrames) {
+			browserFrames.clear();
 		}
 	}
 

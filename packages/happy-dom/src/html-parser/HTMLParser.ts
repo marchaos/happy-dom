@@ -173,9 +173,8 @@ export default class HTMLParser {
 		this.readState = <MarkupReadStateEnum>MarkupReadStateEnum.any;
 		this.documentStructure = null;
 		this.startTagIndex = 0;
-		// Reuse global RegExp by resetting lastIndex instead of creating new one
-		MARKUP_REGEXP.lastIndex = 0;
-		this.markupRegExp = MARKUP_REGEXP;
+		// Create new RegExp for each parse to avoid state corruption during nested parsing
+		this.markupRegExp = new RegExp(MARKUP_REGEXP.source, MARKUP_REGEXP.flags);
 
 		if (this.rootNode instanceof Document) {
 			const { doctype, documentElement, head, body } = <Document>this.rootNode;
@@ -399,11 +398,11 @@ export default class HTMLParser {
 				this.nextElement !== this.documentStructure.nodes.head ||
 				this.documentStructure.level < HTMLDocumentStructureLevelEnum.body)
 		) {
-			// Reuse global RegExp by resetting lastIndex
-			ATTRIBUTE_REGEXP.lastIndex = 0;
+			// Create new RegExp to avoid state corruption during nested parsing
+			const attributeRegexp = new RegExp(ATTRIBUTE_REGEXP.source, ATTRIBUTE_REGEXP.flags);
 			let attributeMatch: RegExpExecArray | null;
 
-			while ((attributeMatch = ATTRIBUTE_REGEXP.exec(attributeString))) {
+			while ((attributeMatch = attributeRegexp.exec(attributeString))) {
 				if (
 					(attributeMatch[1] && attributeMatch[2]) ||
 					(attributeMatch[3] && attributeMatch[5] === '"') ||
@@ -899,12 +898,15 @@ export default class HTMLParser {
 
 		const docTypeString = docTypeSplit.slice(1).join(' ');
 		const attributes = [];
-		// Reuse global RegExp by resetting lastIndex
-		DOCUMENT_TYPE_ATTRIBUTE_REGEXP.lastIndex = 0;
+		// Create new RegExp to avoid state corruption during nested parsing
+		const docTypeAttributeRegexp = new RegExp(
+			DOCUMENT_TYPE_ATTRIBUTE_REGEXP.source,
+			DOCUMENT_TYPE_ATTRIBUTE_REGEXP.flags
+		);
 		const isPublic = docTypeString.toUpperCase().includes('PUBLIC');
 		let attributeMatch;
 
-		while ((attributeMatch = DOCUMENT_TYPE_ATTRIBUTE_REGEXP.exec(docTypeString))) {
+		while ((attributeMatch = docTypeAttributeRegexp.exec(docTypeString))) {
 			attributes.push(attributeMatch[1]);
 		}
 
