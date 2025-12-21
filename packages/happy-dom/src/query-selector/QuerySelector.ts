@@ -253,13 +253,51 @@ export default class QuerySelector {
 			(node[PropertySymbol.ownerDocument] || node)[PropertySymbol.affectsCache].push(cachedItem);
 		}
 
-		const matchesMap: Map<string, Element> = new Map();
-		const matchedPositions: string[] = [];
 		const scope =
 			node[PropertySymbol.nodeType] === NodeTypeEnum.documentNode
 				? (<Document>node).documentElement
 				: node;
-		for (const items of SelectorParser.getSelectorGroups(selector, { scope })) {
+		const groups = SelectorParser.getSelectorGroups(selector, { scope });
+
+		// Fast path: Use ID index for selectors containing an ID when searching from Document
+		if (node[PropertySymbol.nodeType] === NodeTypeEnum.documentNode) {
+			const document = <Document>node;
+			for (const items of groups) {
+				// Check if first selector item has an ID we can use for fast lookup
+				const firstItem = items[0];
+				if (firstItem?.id) {
+					const entry = document[PropertySymbol.elementIdMap].get(firstItem.id);
+					if (entry && entry.elements.length > 0) {
+						// Found element by ID, now verify it matches the full selector
+						for (const element of entry.elements) {
+							// Verify element is within the search scope and matches full selector
+							if (items.length === 1) {
+								// Simple case: just ID or ID with tag/class/attrs on same element
+								if (firstItem.match(element)) {
+									cachedItem.result = new WeakRef(element);
+									return element;
+								}
+							} else {
+								// Complex case: ID selector followed by combinators
+								// Verify the full selector chain matches
+								const match = this.findFirst(null, [element], items, cachedItem);
+								if (match) {
+									cachedItem.result = new WeakRef(match.element);
+									return match.element;
+								}
+							}
+						}
+					}
+					// ID not found or didn't match, this group won't match
+					continue;
+				}
+			}
+		}
+
+		// Standard path: Full tree traversal
+		const matchesMap: Map<string, Element> = new Map();
+		const matchedPositions: string[] = [];
+		for (const items of groups) {
 			const match =
 				node[PropertySymbol.nodeType] === NodeTypeEnum.elementNode
 					? this.findFirst(<Element>node, [<Element>node], items, cachedItem)

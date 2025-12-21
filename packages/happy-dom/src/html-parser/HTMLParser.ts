@@ -58,6 +58,13 @@ const ATTRIBUTE_REGEXP =
 const DOCUMENT_TYPE_ATTRIBUTE_REGEXP = /"([^"]+)"/gm;
 
 /**
+ * Reusable RegExp instances - reset lastIndex before each use to avoid
+ * creating new RegExp objects on every parse() or parseEndOfStartTag() call.
+ */
+const REUSABLE_MARKUP_REGEXP = new RegExp(MARKUP_REGEXP.source, 'gm');
+const REUSABLE_ATTRIBUTE_REGEXP = new RegExp(ATTRIBUTE_REGEXP.source, 'gm');
+
+/**
  * Space RegExp.
  */
 const SPACE_REGEXP = /\s+/;
@@ -173,7 +180,8 @@ export default class HTMLParser {
 		this.readState = <MarkupReadStateEnum>MarkupReadStateEnum.any;
 		this.documentStructure = null;
 		this.startTagIndex = 0;
-		this.markupRegExp = new RegExp(MARKUP_REGEXP, 'gm');
+		REUSABLE_MARKUP_REGEXP.lastIndex = 0;
+		this.markupRegExp = REUSABLE_MARKUP_REGEXP;
 
 		if (this.rootNode instanceof Document) {
 			const { doctype, documentElement, head, body } = <Document>this.rootNode;
@@ -397,7 +405,8 @@ export default class HTMLParser {
 				this.nextElement !== this.documentStructure.nodes.head ||
 				this.documentStructure.level < HTMLDocumentStructureLevelEnum.body)
 		) {
-			const attributeRegexp = new RegExp(ATTRIBUTE_REGEXP, 'gm');
+			REUSABLE_ATTRIBUTE_REGEXP.lastIndex = 0;
+			const attributeRegexp = REUSABLE_ATTRIBUTE_REGEXP;
 			let attributeMatch: RegExpExecArray | null;
 
 			while ((attributeMatch = attributeRegexp.exec(attributeString))) {

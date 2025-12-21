@@ -171,6 +171,7 @@ export const cache = Symbol('cache');
 export const affectsCache = Symbol('affectsCache');
 export const forms = Symbol('forms');
 export const affectsComputedStyleCache = Symbol('affectsComputedStyleCache');
+export const clearComputedStyleCache = Symbol('clearComputedStyleCache');
 export const query = Symbol('query');
 export const computedStyle = Symbol('computedStyle');
 export const getFormControlItems = Symbol('getFormControlItems');

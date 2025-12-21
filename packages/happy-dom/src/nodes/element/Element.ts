@@ -1440,6 +1440,12 @@ export default class Element
 			this.#addIdentifierToWindow(attribute[PropertySymbol.value]);
 		}
 
+		// Clear computed style cache when style-affecting attributes change
+		const attrName = attribute[PropertySymbol.name];
+		if (attrName === 'style' || attrName === 'class' || attrName === 'id') {
+			this[PropertySymbol.clearComputedStyleCache]();
+		}
+
 		this[PropertySymbol.reportMutation](
 			new MutationRecord({
 				type: MutationTypeEnum.attributes,
@@ -1476,6 +1482,12 @@ export default class Element
 
 		if (removedAttribute[PropertySymbol.name] === 'id' && this[PropertySymbol.isConnected]) {
 			this.#removeIdentifierFromWindow(removedAttribute[PropertySymbol.value]);
+		}
+
+		// Clear computed style cache when style-affecting attributes are removed
+		const attrName = removedAttribute[PropertySymbol.name];
+		if (attrName === 'style' || attrName === 'class' || attrName === 'id') {
+			this[PropertySymbol.clearComputedStyleCache]();
 		}
 
 		this[PropertySymbol.reportMutation](

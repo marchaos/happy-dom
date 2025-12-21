@@ -90,9 +90,20 @@ export default class HTMLStyleElement extends HTMLElement {
 	/**
 	 * @override
 	 */
+	public override [PropertySymbol.connectedToDocument](): void {
+		super[PropertySymbol.connectedToDocument]();
+		// Style element added - invalidate computed style cache
+		this[PropertySymbol.clearComputedStyleCache]();
+	}
+
+	/**
+	 * @override
+	 */
 	public override [PropertySymbol.disconnectedFromDocument](): void {
 		super[PropertySymbol.disconnectedFromDocument]();
 		this[PropertySymbol.sheet] = null;
+		// Style element removed - invalidate computed style cache
+		this[PropertySymbol.clearComputedStyleCache]();
 	}
 
 	/**
@@ -101,6 +112,8 @@ export default class HTMLStyleElement extends HTMLElement {
 	public [PropertySymbol.updateSheet](): void {
 		if (this[PropertySymbol.sheet]) {
 			this[PropertySymbol.sheet].replaceSync(this.textContent);
+			// Stylesheet content changed - invalidate computed style cache
+			this[PropertySymbol.clearComputedStyleCache]();
 		}
 	}
 }

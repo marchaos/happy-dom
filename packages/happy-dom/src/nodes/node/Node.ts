@@ -920,7 +920,16 @@ export default class Node extends EventTarget {
 			this[PropertySymbol.affectsCache] = [];
 		}
 
-		// Computed style cache is affected by all mutations.
+		// Note: Computed style cache is cleared separately via [PropertySymbol.clearComputedStyleCache]()
+		// only when style-affecting changes occur (style/class/id attributes, style elements, etc.)
+		// This avoids expensive cache invalidation on every DOM mutation.
+	}
+
+	/**
+	 * Clears computed style cache for the document.
+	 * Should only be called when changes affect CSS (style/class/id attributes, stylesheets, etc.)
+	 */
+	public [PropertySymbol.clearComputedStyleCache](): void {
 		const document = this[PropertySymbol.ownerDocument];
 
 		if (document && document[PropertySymbol.affectsComputedStyleCache].length) {

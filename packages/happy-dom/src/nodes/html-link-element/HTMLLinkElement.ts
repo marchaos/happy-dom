@@ -483,14 +483,8 @@ export default class HTMLLinkElement extends HTMLElement {
 			styleSheet.replaceSync(response!.content);
 			this[PropertySymbol.sheet] = styleSheet;
 
-			// Computed style cache is affected by all mutations.
-			const document = this[PropertySymbol.ownerDocument];
-			if (document) {
-				for (const item of document[PropertySymbol.affectsComputedStyleCache]) {
-					item.result = null;
-				}
-				document[PropertySymbol.affectsComputedStyleCache] = [];
-			}
+			// Stylesheet loaded - invalidate computed style cache
+			this[PropertySymbol.clearComputedStyleCache]();
 
 			this.dispatchEvent(new Event('load'));
 		}
