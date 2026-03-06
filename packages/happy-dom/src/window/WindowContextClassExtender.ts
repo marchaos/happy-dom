@@ -179,6 +179,5 @@ export default class WindowContextClassExtender {
 
 		// WebSocket
 		(<any>window).WebSocket = createWindowAwareClass(WebSocketImplementation, window);
-
 	}
 }

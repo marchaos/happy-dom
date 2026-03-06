@@ -596,7 +596,14 @@ export default class QuerySelector {
 							for (let j = index + 1; j < children.length; j++) {
 								const sibling = children[j];
 								matched = matched.concat(
-									this.findAll(rootElement, [sibling], selectorItems, cachedItem, selectorIndex + 1, position)
+									this.findAll(
+										rootElement,
+										[sibling],
+										selectorItems,
+										cachedItem,
+										selectorIndex + 1,
+										position
+									)
 								);
 							}
 							break;
@@ -610,7 +617,14 @@ export default class QuerySelector {
 				childrenOfChild.length
 			) {
 				matched = matched.concat(
-					this.findAll(rootElement, childrenOfChild, selectorItems, cachedItem, selectorIndex, position)
+					this.findAll(
+						rootElement,
+						childrenOfChild,
+						selectorItems,
+						cachedItem,
+						selectorIndex,
+						position
+					)
 				);
 			}
 		}
