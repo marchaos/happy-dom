@@ -1586,9 +1586,7 @@ export default class Element
 		this[PropertySymbol.children] = null;
 		this[PropertySymbol.computedStyle] = null;
 		this[PropertySymbol.propertyEventListeners].clear();
-		this[PropertySymbol.attributes][PropertySymbol.itemsByNamespaceURI].clear();
-		this[PropertySymbol.attributes][PropertySymbol.itemsByName].clear();
-		this[PropertySymbol.attributes][PropertySymbol.items].clear();
+		this[PropertySymbol.attributes][PropertySymbol.data].clear();
 	}
 
 	/**
