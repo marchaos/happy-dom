@@ -4,6 +4,8 @@ const CACHE_MAX_SIZE = 10000;
 const CACHE_EVICT_COUNT = 1000; // Evict this many entries when limit reached
 const ASCII_LOWER_CASE_CACHE: Map<string, string> = new Map();
 const ASCII_UPPER_CASE_CACHE: Map<string, string> = new Map();
+const ASCII_UPPER_CASE_REGEXP = /[A-Z]/g;
+const ASCII_LOWER_CASE_REGEXP = /[a-z]/g;
 
 // Instrumentation for debugging (can be enabled via env var)
 const DEBUG_CACHE =
@@ -74,10 +76,6 @@ export default class StringUtility {
 			ASCII_LOWER_CASE_CACHE.set(text, cached);
 			return cached;
 		}
-		if (DEBUG_CACHE) {
-			lowerCacheMisses++;
-		}
-
 		let newText = '';
 		for (const char of text) {
 			const value = char.charCodeAt(0);
@@ -114,10 +112,6 @@ export default class StringUtility {
 			ASCII_UPPER_CASE_CACHE.set(text, cached);
 			return cached;
 		}
-		if (DEBUG_CACHE) {
-			upperCacheMisses++;
-		}
-
 		let newText = '';
 		for (const char of text) {
 			const value = char.charCodeAt(0);

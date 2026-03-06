@@ -1,18 +1,18 @@
-import Element from '../nodes/element/Element.js';
+import type Element from '../nodes/element/Element.js';
 import * as PropertySymbol from '../PropertySymbol.js';
-import SelectorItem from './SelectorItem.js';
+import type SelectorItem from './SelectorItem.js';
 import NodeList from '../nodes/node/NodeList.js';
 import NodeTypeEnum from '../nodes/node/NodeTypeEnum.js';
 import SelectorCombinatorEnum from './SelectorCombinatorEnum.js';
-import Document from '../nodes/document/Document.js';
-import DocumentFragment from '../nodes/document-fragment/DocumentFragment.js';
+import type Document from '../nodes/document/Document.js';
+import type DocumentFragment from '../nodes/document-fragment/DocumentFragment.js';
 import SelectorParser from './SelectorParser.js';
-import ISelectorMatch from './ISelectorMatch.js';
-import IHTMLElementTagNameMap from '../config/IHTMLElementTagNameMap.js';
-import ISVGElementTagNameMap from '../config/ISVGElementTagNameMap.js';
-import ICachedQuerySelectorAllItem from '../nodes/node/ICachedQuerySelectorAllResult.js';
-import ICachedQuerySelectorItem from '../nodes/node/ICachedQuerySelectorResult.js';
-import ICachedMatchesItem from '../nodes/node/ICachedMatchesResult.js';
+import type ISelectorMatch from './ISelectorMatch.js';
+import type IHTMLElementTagNameMap from '../config/IHTMLElementTagNameMap.js';
+import type ISVGElementTagNameMap from '../config/ISVGElementTagNameMap.js';
+import type ICachedQuerySelectorAllItem from '../nodes/node/ICachedQuerySelectorAllResult.js';
+import type ICachedQuerySelectorItem from '../nodes/node/ICachedQuerySelectorResult.js';
+import type ICachedMatchesItem from '../nodes/node/ICachedMatchesResult.js';
 
 type DocumentPositionAndElement = {
 	documentPosition: string;
@@ -108,18 +108,21 @@ export default class QuerySelector {
 		const cache = node[PropertySymbol.cache].querySelectorAll;
 		const cachedResult = cache.get(selector);
 
-		if (cachedResult?.result) {
-			const result = cachedResult.result.deref();
-			if (result) {
-				return result;
+		if (cachedResult) {
+			if (cachedResult.result !== null) {
+				const result = cachedResult.result.deref();
+				if (result) {
+					return result;
+				}
 			}
+			cache.delete(selector);
 		}
 
 		const scope =
 			node[PropertySymbol.nodeType] === NodeTypeEnum.documentNode
 				? (<Document>node).documentElement
 				: node;
-		const groups = SelectorParser.getSelectorGroups(selector, { scope });
+		const groups = new SelectorParser({ window, scope }).getSelectorGroups(selector);
 		const items: Element[] = [];
 		const nodeList = new NodeList<Element>(PropertySymbol.illegalConstructor, items);
 		const matchesMap: Map<string, Element> = new Map();
@@ -233,17 +236,21 @@ export default class QuerySelector {
 
 		const cachedResult = node[PropertySymbol.cache].querySelector.get(selector);
 
-		if (cachedResult?.result) {
-			const result = cachedResult.result.deref();
-			if (result) {
-				return result;
+		if (cachedResult) {
+			if (cachedResult.result !== null) {
+				if (!cachedResult.result.element) {
+					return null;
+				}
+				const result = cachedResult.result.element.deref();
+				if (result) {
+					return result;
+				}
 			}
+			node[PropertySymbol.cache].querySelector.delete(selector);
 		}
 
 		const cachedItem: ICachedQuerySelectorItem = {
-			result: <WeakRef<any>>{
-				deref: () => null
-			}
+			result: { element: null }
 		};
 
 		node[PropertySymbol.cache].querySelector.set(selector, cachedItem);
@@ -253,30 +260,32 @@ export default class QuerySelector {
 			(node[PropertySymbol.ownerDocument] || node)[PropertySymbol.affectsCache].push(cachedItem);
 		}
 
-		const matchesMap: Map<string, Element> = new Map();
-		const matchedPositions: string[] = [];
+		let bestMatch: DocumentPositionAndElement | null = null;
+		const matchesMap: Map<string, boolean> = new Map();
 		const scope =
 			node[PropertySymbol.nodeType] === NodeTypeEnum.documentNode
 				? (<Document>node).documentElement
 				: node;
-		for (const items of SelectorParser.getSelectorGroups(selector, { scope })) {
+
+		for (const items of new SelectorParser({ window, scope }).getSelectorGroups(selector)) {
 			const match =
 				node[PropertySymbol.nodeType] === NodeTypeEnum.elementNode
 					? this.findFirst(<Element>node, [<Element>node], items, cachedItem)
 					: this.findFirst(null, (<Element>node)[PropertySymbol.elementArray], items, cachedItem);
 
 			if (match && !matchesMap.has(match.documentPosition)) {
-				matchesMap.set(match.documentPosition, match.element);
-				matchedPositions.push(match.documentPosition);
+				matchesMap.set(match.documentPosition, true);
+				if (!bestMatch || match.documentPosition < bestMatch.documentPosition) {
+					bestMatch = match;
+				}
 			}
 		}
 
-		if (matchedPositions.length > 0) {
-			const keys = matchedPositions.sort();
-			return matchesMap.get(keys[0])!;
-		}
+		const element = bestMatch?.element || null;
 
-		return null;
+		cachedItem.result = { element: element ? new WeakRef(element) : null };
+
+		return element;
 	}
 
 	/**
@@ -341,8 +350,11 @@ export default class QuerySelector {
 
 		const cachedResult = element[PropertySymbol.cache].matches.get(selector);
 
-		if (cachedResult?.result) {
-			return cachedResult.result.match;
+		if (cachedResult) {
+			if (cachedResult.result !== null) {
+				return cachedResult.result.match;
+			}
+			element[PropertySymbol.cache].matches.delete(selector);
 		}
 
 		const cachedItem: ICachedMatchesItem = {
@@ -363,10 +375,11 @@ export default class QuerySelector {
 			scopeOrElement[PropertySymbol.nodeType] === NodeTypeEnum.documentNode
 				? (<Document>scopeOrElement).documentElement
 				: scopeOrElement;
-		for (const items of SelectorParser.getSelectorGroups(selector, {
-			...options,
+		for (const items of new SelectorParser({
+			ignoreErrors: options?.ignoreErrors,
+			window,
 			scope
-		})) {
+		}).getSelectorGroups(selector)) {
 			const result = this.matchSelector(element, items.reverse(), cachedItem);
 
 			if (result) {
@@ -399,6 +412,11 @@ export default class QuerySelector {
 		priorityWeight = 0
 	): ISelectorMatch | null {
 		const selectorItem = selectorItems[selectorIndex];
+
+		if (!selectorItem) {
+			return null;
+		}
+
 		const result = selectorItem.match(element);
 
 		if (result) {
@@ -428,6 +446,7 @@ export default class QuerySelector {
 						}
 					}
 					break;
+				case SelectorCombinatorEnum.none:
 				case SelectorCombinatorEnum.child:
 				case SelectorCombinatorEnum.descendant:
 					const parentElement = element.parentElement;
@@ -479,7 +498,10 @@ export default class QuerySelector {
 			}
 		}
 
-		if (previousSelectorItem?.combinator === SelectorCombinatorEnum.descendant) {
+		if (
+			previousSelectorItem?.combinator === SelectorCombinatorEnum.none ||
+			previousSelectorItem?.combinator === SelectorCombinatorEnum.descendant
+		) {
 			const parentElement = element.parentElement;
 			if (parentElement) {
 				return this.matchSelector(
@@ -519,6 +541,10 @@ export default class QuerySelector {
 		const nextSelectorItem = selectorItems[selectorIndex + 1];
 		let matched: DocumentPositionAndElement[] = [];
 
+		if (!selectorItem) {
+			return [];
+		}
+
 		for (let i = 0, max = children.length; i < max; i++) {
 			const child = children[i];
 			const childrenOfChild = (<Element>child)[PropertySymbol.elementArray];
@@ -551,6 +577,7 @@ export default class QuerySelector {
 								);
 							}
 							break;
+						case SelectorCombinatorEnum.none:
 						case SelectorCombinatorEnum.descendant:
 						case SelectorCombinatorEnum.child:
 							matched = matched.concat(
@@ -577,7 +604,11 @@ export default class QuerySelector {
 				}
 			}
 
-			if (selectorItem.combinator === SelectorCombinatorEnum.descendant && childrenOfChild.length) {
+			if (
+				(selectorItem.combinator === SelectorCombinatorEnum.none ||
+					selectorItem.combinator === SelectorCombinatorEnum.descendant) &&
+				childrenOfChild.length
+			) {
 				matched = matched.concat(
 					this.findAll(rootElement, childrenOfChild, selectorItems, cachedItem, selectorIndex, position)
 				);
@@ -609,6 +640,10 @@ export default class QuerySelector {
 		const selectorItem = selectorItems[selectorIndex];
 		const nextSelectorItem = selectorItems[selectorIndex + 1];
 
+		if (!selectorItem) {
+			return null;
+		}
+
 		for (let i = 0, max = children.length; i < max; i++) {
 			const child = children[i];
 			const childrenOfChild = (<Element>child)[PropertySymbol.elementArray];
@@ -639,6 +674,7 @@ export default class QuerySelector {
 								}
 							}
 							break;
+						case SelectorCombinatorEnum.none:
 						case SelectorCombinatorEnum.descendant:
 						case SelectorCombinatorEnum.child:
 							const match = this.findFirst(
@@ -674,7 +710,11 @@ export default class QuerySelector {
 				}
 			}
 
-			if (selectorItem.combinator === SelectorCombinatorEnum.descendant && childrenOfChild.length) {
+			if (
+				(selectorItem.combinator === SelectorCombinatorEnum.none ||
+					selectorItem.combinator === SelectorCombinatorEnum.descendant) &&
+				childrenOfChild.length
+			) {
 				const match = this.findFirst(
 					rootElement,
 					childrenOfChild,

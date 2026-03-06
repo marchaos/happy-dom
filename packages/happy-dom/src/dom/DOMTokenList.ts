@@ -1,4 +1,4 @@
-import Element from '../nodes/element/Element.js';
+import type Element from '../nodes/element/Element.js';
 import * as PropertySymbol from '../PropertySymbol.js';
 
 const ATTRIBUTE_SPLIT_REGEXP = /[\t\f\n\r ]+/;
@@ -270,20 +270,20 @@ export default class DOMTokenList {
 	 * @param tokens Tokens.
 	 */
 	public add(...tokens: string[]): void {
-		const list = this[PropertySymbol.getTokenList]();
-		const toAdd: string[] = [];
+		const list = this[PropertySymbol.getTokenList]().slice();
+		const existingTokens = new Set(list);
 
 		for (const token of tokens) {
-			if (!list.includes(token) && !toAdd.includes(token)) {
-				toAdd.push(token);
+			if (!existingTokens.has(token)) {
+				existingTokens.add(token);
+				list.push(token);
 			}
 		}
 
-		if (toAdd.length > 0) {
-			const currentValue = this[PropertySymbol.ownerElement].getAttribute(this[PropertySymbol.attributeName]) || '';
-			const newValue = currentValue ? currentValue + ' ' + toAdd.join(' ') : toAdd.join(' ');
-			this[PropertySymbol.ownerElement].setAttribute(this[PropertySymbol.attributeName], newValue);
-		}
+		this[PropertySymbol.ownerElement].setAttribute(
+			this[PropertySymbol.attributeName],
+			list.join(' ')
+		);
 	}
 
 	/**
@@ -293,17 +293,12 @@ export default class DOMTokenList {
 	 */
 	public remove(...tokens: string[]): void {
 		const list = this[PropertySymbol.getTokenList]();
-		const result: string[] = [];
-
-		for (let i = 0, len = list.length; i < len; i++) {
-			if (!tokens.includes(list[i])) {
-				result.push(list[i]);
-			}
-		}
+		const tokensToRemove = new Set(tokens);
+		const newList = list.filter((item) => !tokensToRemove.has(item));
 
 		this[PropertySymbol.ownerElement].setAttribute(
 			this[PropertySymbol.attributeName],
-			result.join(' ')
+			newList.join(' ')
 		);
 	}
 

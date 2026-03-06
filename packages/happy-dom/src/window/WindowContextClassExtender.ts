@@ -1,4 +1,4 @@
-import BrowserWindow from './BrowserWindow.js';
+import type BrowserWindow from './BrowserWindow.js';
 import * as PropertySymbol from '../PropertySymbol.js';
 
 import DocumentImplementation from '../nodes/document/Document.js';
@@ -36,6 +36,7 @@ import MediaStreamImplementation from '../nodes/html-media-element/MediaStream.j
 import MediaStreamTrackImplementation from '../nodes/html-media-element/MediaStreamTrack.js';
 import CanvasCaptureMediaStreamTrackImplementation from '../nodes/html-canvas-element/CanvasCaptureMediaStreamTrack.js';
 import URLImplementation from '../url/URL.js';
+import WebSocketImplementation from '../web-socket/WebSocket.js';
 
 /**
  * Creates a proxy class that injects window into instances on construction.
@@ -175,5 +176,9 @@ export default class WindowContextClassExtender {
 
 		// URL class
 		(<any>window).URL = createWindowAwareClass(URLImplementation, window);
+
+		// WebSocket
+		(<any>window).WebSocket = createWindowAwareClass(WebSocketImplementation, window);
+
 	}
 }
