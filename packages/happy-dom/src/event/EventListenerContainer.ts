@@ -1,5 +1,5 @@
-import TEventListener from './TEventListener.js';
-import IEventListenerOptions from './IEventListenerOptions.js';
+import type { TEventListener } from './TEventListener.js';
+import type IEventListenerOptions from './IEventListenerOptions.js';
 
 /**
  * Lazy listener map that only creates the Map when first accessed.

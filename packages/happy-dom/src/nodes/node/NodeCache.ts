@@ -1,10 +1,10 @@
-import ICachedQuerySelectorResult from './ICachedQuerySelectorResult.js';
-import ICachedQuerySelectorAllResult from './ICachedQuerySelectorAllResult.js';
-import ICachedMatchesResult from './ICachedMatchesResult.js';
-import ICachedElementsByTagNameResult from './ICachedElementsByTagNameResult.js';
-import ICachedElementByTagNameResult from './ICachedElementByTagNameResult.js';
-import ICachedElementByIdResult from './ICachedElementByIdResult.js';
-import ICachedComputedStyleResult from './ICachedComputedStyleResult.js';
+import type ICachedQuerySelectorResult from './ICachedQuerySelectorResult.js';
+import type ICachedQuerySelectorAllResult from './ICachedQuerySelectorAllResult.js';
+import type ICachedMatchesResult from './ICachedMatchesResult.js';
+import type ICachedElementsByTagNameResult from './ICachedElementsByTagNameResult.js';
+import type ICachedElementByTagNameResult from './ICachedElementByTagNameResult.js';
+import type ICachedElementByIdResult from './ICachedElementByIdResult.js';
+import type ICachedComputedStyleResult from './ICachedComputedStyleResult.js';
 
 /**
  * Lazy node cache that only creates Maps when they are first accessed.

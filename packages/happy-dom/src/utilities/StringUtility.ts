@@ -4,16 +4,14 @@ const CACHE_MAX_SIZE = 10000;
 const CACHE_EVICT_COUNT = 1000; // Evict this many entries when limit reached
 const ASCII_LOWER_CASE_CACHE: Map<string, string> = new Map();
 const ASCII_UPPER_CASE_CACHE: Map<string, string> = new Map();
-const ASCII_UPPER_CASE_REGEXP = /[A-Z]/g;
-const ASCII_LOWER_CASE_REGEXP = /[a-z]/g;
 
 // Instrumentation for debugging (can be enabled via env var)
 const DEBUG_CACHE =
 	typeof process !== 'undefined' && process.env?.HAPPY_DOM_DEBUG_STRING_CACHE === '1';
 let lowerCacheHits = 0;
-let lowerCacheMisses = 0;
+const lowerCacheMisses = 0;
 let upperCacheHits = 0;
-let upperCacheMisses = 0;
+const upperCacheMisses = 0;
 let evictionCount = 0;
 
 if (DEBUG_CACHE) {

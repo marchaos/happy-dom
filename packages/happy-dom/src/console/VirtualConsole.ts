@@ -2,7 +2,6 @@ import type IVirtualConsolePrinter from './IVirtualConsolePrinter.js';
 import VirtualConsoleLogLevelEnum from './enums/VirtualConsoleLogLevelEnum.js';
 import VirtualConsoleLogTypeEnum from './enums/VirtualConsoleLogTypeEnum.js';
 import type IVirtualConsoleLogGroup from './IVirtualConsoleLogGroup.js';
-import type { ConsoleConstructor } from 'console';
 
 /**
  * Virtual Console.
@@ -12,7 +11,8 @@ import type { ConsoleConstructor } from 'console';
 export default class VirtualConsole implements Console {
 	// This is needed as the interface for the NodeJS Console also have a reference to the ConsoleConstructor class as a property for some reason.
 	// This is not part of the browser specs.
-	public declare Console: ConsoleConstructor;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	public declare Console: any;
 
 	#printer: IVirtualConsolePrinter;
 	#count: { [label: string]: number } = {};
